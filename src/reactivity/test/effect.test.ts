@@ -1,4 +1,4 @@
-import { effect, reactive} from '../reactivity/index';
+import { effect, reactive} from '../index';
 
 // describe(name, fn) 是一个将多个相关的测试组合在一起的块
 describe('effect test', () => {

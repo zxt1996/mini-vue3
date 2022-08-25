@@ -1,4 +1,4 @@
-import { reactive} from '../reactivity/index';
+import { reactive} from '../index';
 
 describe('reactive', () => {
     // 跳过运行这个测试
