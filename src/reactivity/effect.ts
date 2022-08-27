@@ -5,12 +5,12 @@ export type EffectScheduler = (...args: any[]) => any
 // 当前正在执行的 effect，即被注册的副作用函数
 let activeEffect: ReactiveEffect;
 
-let shouldTrack = false;
+let shouldTrack = false; // 全局变量来表示应不应该被 track
 
 class ReactiveEffect {
     public deps: Set<ReactiveEffect>[] = [];
     public active = true; // 该 effect 是否激活
-    public onStop?: () => void;
+    public onStop?: () => void; // 依赖删除后的回调
 
     constructor (public fn: Function, public scheduler?: EffectScheduler) {}
 
@@ -33,7 +33,11 @@ class ReactiveEffect {
         return returnValue;
     }
 
+    // 停止监听依赖本质上就是把effect从deps(Set集合)里面delete掉
+    // 那么当trigger被再次触发的时候就不会执行该effect的run()方法了
     stop () {
+
+        // 如果用户调用多次 stop() 并且传入的都是相同的 runner 来停止监听依赖，那么代码将会执行不必要的循环操作（stop 里面有循环来找出哪个应该被 delete 掉），降低代码性能
         // 追加active 标识是为了性能优化，避免每次循环重复调用stop同一个依赖的时候
         if (this.active) {
             cleanupEffect(this);
@@ -63,6 +67,7 @@ const targetMap = new Map<Record<EffectKey, any>, Map<EffectKey, Set<IDep>>>();
 
 
 export function isTracking () {
+    // 没有执行ReactiveEffect的run(), 是否收集依赖
     return activeEffect !== undefined && shouldTrack;
 }
 
@@ -122,7 +127,7 @@ export interface EffectRunner<T = any> {
     effect: ReactiveEffect
 }
 
-// effect 会立即触发这个函数，同时响应式追踪其依赖
+// effect 立即执行一次回调函数，当回调函数内的依赖数据发生变化的时候会再次触发该回调函数
 export function effect<T = any> (
     fn: () => T, 
     option?: EffectOption

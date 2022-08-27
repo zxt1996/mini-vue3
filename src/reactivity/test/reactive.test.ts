@@ -1,8 +1,7 @@
 import { reactive} from '../index';
 
 describe('reactive', () => {
-    // 跳过运行这个测试
-    it.skip('reactive test', () => {
+    it('reactive test', () => {
         let original = {num: 1};
         let count = reactive(original);
         expect(original).not.toBe(count);
