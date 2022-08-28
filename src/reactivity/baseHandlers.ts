@@ -1,8 +1,23 @@
 import { track, trigger } from './effect';
+import { reactive, ReactiveFlags, readonly } from './reactive';
+import { isObject } from '../shared';
 
 export function createGetter<T extends object>(isReadonly = false) {
     return function get(target: T, key: string | symbol) {
+        // isReactive 和 isReadonly 都是根据传入的参数 `isReadonly` 来决定是否返回 true | false
+        if (key === ReactiveFlags.IS_REACTIVE) {
+            return !isReadonly
+        } else if (key === ReactiveFlags.IS_READONLY) {
+            return isReadonly;
+        }
+
         let res = Reflect.get(target, key);
+
+        // 当触发get操作的得到的res，我们追加一个判断，如果发现 res 不是reactive或者readonly，并且res是对象，那么递归调用reactive()或者readonly()
+        // 实现嵌套对象的 reactive
+        if (isObject(res)) {
+            return isReadonly ? readonly(res) : reactive(res);
+        }
 
         // 判断是否 readonly
         if (!isReadonly) {
