@@ -20,13 +20,11 @@ describe('readonly', () => {
             username: 'jojo'
         };
 
-        const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+        const warn = jest.spyOn(console, "warn");
         
         let readonlyObj = readonly(original);
         readonlyObj.username = 'other name';
 
-        expect(warn).toBeCalledWith(`${readonlyObj} do not set username value ${'other name'}, because it is readonly`);
-
-        warn.mockRestore();
+        expect(warn).toHaveBeenCalled();
     })
 })
