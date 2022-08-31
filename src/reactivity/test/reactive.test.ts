@@ -1,4 +1,4 @@
-import { reactive, isReactive } from '../reactive';
+import { reactive, isReactive, isProxy } from '../reactive';
 
 describe('reactive', () => {
     it('reactive test', () => {
@@ -8,6 +8,7 @@ describe('reactive', () => {
         expect(count.num).toEqual(1);
         expect(isReactive(original)).toBe(false);
         expect(isReactive(count)).toBe(true);
+        expect(isProxy(count)).toBe(true);
     })
 
     it('nest reactive', () => {

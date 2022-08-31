@@ -34,3 +34,7 @@ export function readonly<T extends object>(target: T) {
 export function shallowReadonly<T extends object>(target: T) {
     return createReactiveObject<T>(target, shallowReadonlyHandlers);
 }
+
+export function isProxy (value: unknown) {
+    return isReactive(value) || isReadonly(value);
+}
