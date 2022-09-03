@@ -1,13 +1,17 @@
-import { createReactiveObject, mutableHandlers, readonlyHandlers, shallowReadonlyHandlers } from './baseHandlers';
+import { createReactiveObject, mutableHandlers, readonlyHandlers, shallowReadonlyHandlers, shallowReactiveHandlers } from './baseHandlers';
 
 export enum ReactiveFlags {
     IS_REACTIVE = '__v_isReactive',
-    IS_READONLY = '__v_isReadonly'
+    IS_READONLY = '__v_isReadonly',
+    IS_SHALLOW = '__v_isShallow',
+    RAW = '__v_raw'
 }
 
 export interface Target {
     [ReactiveFlags.IS_REACTIVE]?: boolean,
-    [ReactiveFlags.IS_READONLY]?: boolean
+    [ReactiveFlags.IS_READONLY]?: boolean,
+    [ReactiveFlags.IS_SHALLOW]?: boolean,
+    [ReactiveFlags.RAW]?: any
 }
 
 export function isReactive (value: unknown) {
@@ -35,6 +39,22 @@ export function shallowReadonly<T extends object>(target: T) {
     return createReactiveObject<T>(target, shallowReadonlyHandlers);
 }
 
+export function shallowReactive<T extends object>(target: T) {
+    return createReactiveObject<T>(target, shallowReactiveHandlers);
+}
+
 export function isProxy (value: unknown) {
     return isReactive(value) || isReadonly(value);
+}
+
+// 检查对象是否开启 shallow mode
+export function isShallow (value: unknown) {
+    return !!(value as Target)[ReactiveFlags.IS_SHALLOW];
+}
+
+// 返回 reactive 或 readonly 代理的原始对象
+export function toRaw<T>(observed: T): T {
+    // observed 存在，触发 get 操作，在 createGetter 直接 return target
+    const raw = observed && (observed as Target)[ReactiveFlags.RAW];
+    return raw ? toRaw(raw) : observed;
 }

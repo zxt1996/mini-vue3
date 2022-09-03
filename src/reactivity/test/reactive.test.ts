@@ -1,4 +1,4 @@
-import { reactive, isReactive, isProxy } from '../reactive';
+import { reactive, isReactive, isProxy, toRaw } from '../reactive';
 
 describe('reactive', () => {
     it('reactive test', () => {
@@ -25,4 +25,25 @@ describe('reactive', () => {
         expect(isReactive(nested.arr[0])).toBe(true)
         expect(isReactive(nested.foo)).toBe(true)
     })
+
+    it('toRaw', () => {
+        const original = { foo: 1 };
+        const observed = reactive(original);
+
+        // 输出的结果必须要等于原始值
+        expect(toRaw(observed)).toBe(original);
+        expect(toRaw(original)).toBe(original);
+    })
+
+    it('nested reactive toRaw', () => {
+        const original = {
+          foo: {
+            name: 'ghx',
+          },
+        }
+        const observed = reactive(original)
+        const raw = toRaw(observed)
+        expect(raw).toBe(original)
+        expect(raw.foo).toBe(original.foo)
+      })
 })

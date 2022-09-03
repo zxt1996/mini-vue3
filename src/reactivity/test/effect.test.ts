@@ -1,4 +1,5 @@
-import { effect, reactive, stop} from '../index';
+import { effect, stop} from '../effect';
+import { reactive } from '../reactive';
 
 // describe(name, fn) 是一个将多个相关的测试组合在一起的块
 describe('effect test', () => {

@@ -1,6 +1,7 @@
 import { extend } from '../shared/index';
 
 export type EffectScheduler = (...args: any[]) => any
+export type Dep = Set<ReactiveEffect>
 
 // 当前正在执行的 effect，即被注册的副作用函数
 let activeEffect: ReactiveEffect;
@@ -8,7 +9,7 @@ let activeEffect: ReactiveEffect;
 let shouldTrack = false; // 全局变量来表示应不应该被 track
 
 class ReactiveEffect {
-    public deps: Set<ReactiveEffect>[] = [];
+    public deps: Dep[] = [];
     public active = true; // 该 effect 是否激活
     public onStop?: () => void; // 依赖删除后的回调
 
@@ -87,32 +88,43 @@ export function track (target: Record<EffectKey, any>, key: EffectKey) {
     }
 
     // deps 是一个 set 对象，存放着这个 key 相应的所有依赖
-    let deps = depsMap.get(key);
+    let dep = depsMap.get(key);
 
     // 避免不必要的 add 操作
-    if (deps?.has(activeEffect)) return;
+    if (dep?.has(activeEffect)) return;
 
-    if (!deps) {
-        deps = new Set();
-        depsMap.set(key, deps);
+    if (!dep) {
+        dep = new Set();
+        depsMap.set(key, dep);
     }
 
+    trackEffect(dep);
+}
+
+// 依赖收集
+export function trackEffect(dep: Dep) {
+    // 避免不必要的 add 操作
+    if (dep.has(activeEffect)) return;
+
     // 将 activeEffect 实例对象 add 给 deps
-    deps.add(activeEffect);
+    dep.add(activeEffect);
 
     // activeEffect的deps 接收 Set<ReactiveEffect>类型的deps
     // 供删除依赖的时候使用(停止监听依赖)
-    activeEffect.deps.push(deps);
+    activeEffect.deps.push(dep);
 }
 
 // 找出 target 的 key 对应的所有依赖，并依次执行
 export function trigger (target: Record<EffectKey, any>, key: EffectKey) {
     const depsMap = targetMap.get(target);
-    const deps = depsMap?.get(key);
-    if (deps) {
-        for (let dep of deps) {
-            dep.scheduler ? dep.scheduler() : dep.run();
-        }
+    const dep = depsMap?.get(key);
+    dep && triggerEffect(dep);
+}
+
+// 触发依赖
+export function triggerEffect (dep: Dep) {
+    for (let effect of dep) {
+        effect.scheduler ? effect.scheduler() : effect.run();
     }
 }
 

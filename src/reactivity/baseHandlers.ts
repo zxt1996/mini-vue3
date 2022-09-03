@@ -9,6 +9,10 @@ export function createGetter<T extends object>(isReadonly = false, isShallow = f
             return !isReadonly
         } else if (key === ReactiveFlags.IS_READONLY) {
             return isReadonly;
+        } else if (key === ReactiveFlags.IS_SHALLOW) {
+            return isShallow;
+        } else if (key === ReactiveFlags.RAW) {
+            return target;
         }
 
         let res = Reflect.get(target, key);
@@ -17,23 +21,23 @@ export function createGetter<T extends object>(isReadonly = false, isShallow = f
             return res;
         }
 
-        // 当触发get操作的得到的res，我们追加一个判断，如果发现 res 不是reactive或者readonly，并且res是对象，那么递归调用reactive()或者readonly()
-        // 实现嵌套对象的 reactive
-        if (isObject(res)) {
-            return isReadonly ? readonly(res) : reactive(res);
-        }
-
         // 判断是否 readonly
         if (!isReadonly) {
             // 依赖收集
             track(target, key as string);
         }
 
+        // 当触发get操作的得到的res，我们追加一个判断，如果发现 res 不是reactive或者readonly，并且res是对象，那么递归调用reactive()或者readonly()
+        // 实现嵌套对象的 reactive
+        if (isObject(res)) {
+            return isReadonly ? readonly(res) : reactive(res);
+        }
+
         return res;
     }
 }
 
-export function createSetter<T extends object>() {
+export function createSetter<T extends object>(isShallow = false) {
     return function set(target: T, key: string | symbol, value: any) {
         let success: boolean;
         success = Reflect.set(target, key, value);
@@ -48,6 +52,10 @@ const get = createGetter();
 const set = createSetter();
 const readonlyGet = createGetter(true);
 const shallowReadonlyGet = createGetter(true, true);
+// shallowReactive 的 get 操作
+const shallowGet = createGetter(false, true);
+// shallowReactive 的 set 操作
+const shallowSet = createSetter(true);
 
 export const mutableHandlers: ProxyHandler<object> = {
     get,
@@ -66,6 +74,15 @@ export function createReactiveObject<T extends object>(target: T, handlers: Prox
     return new Proxy(target, handlers);
 }
 
-export const shallowReadonlyHandlers: ProxyHandler<object> = extend({}, {
-    get: shallowReadonlyGet
-});
+export const shallowReadonlyHandlers: ProxyHandler<object> = extend({}, 
+    readonlyHandlers,
+    { get: shallowReadonlyGet }
+);
+
+
+export const shallowReactiveHandlers: ProxyHandler<object> = extend({},
+    mutableHandlers, {
+        get: shallowGet,
+        set: shallowSet
+    }
+)
