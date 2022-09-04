@@ -8,7 +8,7 @@ let activeEffect: ReactiveEffect;
 
 let shouldTrack = false; // 全局变量来表示应不应该被 track
 
-class ReactiveEffect {
+export class ReactiveEffect {
     public deps: Dep[] = [];
     public active = true; // 该 effect 是否激活
     public onStop?: () => void; // 依赖删除后的回调

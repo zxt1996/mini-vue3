@@ -6,12 +6,13 @@
 
 import { hasChanged, isObject } from '../shared';
 import { Dep, triggerEffect, trackEffect, isTracking } from './effect';
-import { reactive } from './reactive';
+import { isReactive, reactive } from './reactive';
 
 class RefImpl<T> {
     private _value: T;
     public dep?: Dep = undefined;
     private rawValue: T;
+    public __v_isRef = true // 标识是ref对象
 
     constructor(value: any) {
         this._value = convert(value);
@@ -48,3 +49,32 @@ function convert(value: any) {
 export function ref<T>(value: T) {
     return new RefImpl(value);
 }
+
+// 检查值是否为一个 ref 对象。
+export function isRef(ref: any) {
+    // 有可能为undefined，所以加上!!让undefined转为boolean类型
+    return !!(ref && ref.__v_isRef)
+  }
+  // 如果参数是一个 ref，则返回内部值，否则返回参数本身。这是 val = isRef(val) ? val.value : val 的语法糖函数。
+  export function unref(ref: any) {
+    return isRef(ref) ? ref.value : ref
+  }
+  // 通常用在vue3 template里面ref取值，在template里面不需要.value就可以拿到ref的值
+  export function proxyRefs<T extends object>(obj: T){
+    return isReactive(obj) ? obj : new Proxy<any>(obj, {
+      get(target, key){
+        // unref已经处理了是否ref的情况所以我们不需要自己if处理，如果是，返回.value，如果不是，直接返回值
+        return unref(Reflect.get(target, key)) 
+      },
+      set(target, key, value){
+        console.log(target, key)
+        // 因为value为普通值类型的情况特殊，要把value赋值给ref的.value
+        if (isRef(target[key]) && !isRef(value)) {
+          target[key].value = value
+          return true
+        } else {
+          return Reflect.set(target, key, value)
+        }
+      }
+    })
+  }
